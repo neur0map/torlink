@@ -33,6 +33,19 @@ export type CliCommand =
       daemon?: boolean;
     }
   | { kind: "files"; port?: number; host?: string; token?: string; dir?: string; daemon?: boolean }
+  | {
+      kind: "discord";
+      downloadDir?: string;
+      seedTimeMs?: number;
+      deleteFiles?: boolean;
+      daemon?: boolean;
+    }
+  | {
+      kind: "daemon";
+      downloadDir?: string;
+      seedTimeMs?: number;
+      deleteFiles?: boolean;
+    }
   | { kind: "attach" }
   | { kind: "update"; force?: boolean }
   | { kind: "search"; query: string; category?: SearchCategory }
@@ -162,6 +175,27 @@ export function parseCliArgs(argv: string[]): CliCommand {
       daemon: bools.has("daemon"),
     };
   }
+  if (a === "discord") {
+    const { bools, rest: r0 } = splitBooleans(args.slice(1));
+    const { flags } = readFlags(r0);
+    return {
+      kind: "discord",
+      downloadDir: flags.to ?? flags.dir,
+      seedTimeMs: seedTimeFrom(flags["seed-time"]),
+      deleteFiles: bools.has("delete-files"),
+      daemon: bools.has("daemon"),
+    };
+  }
+  if (a === "daemon") {
+    const { bools, rest: r0 } = splitBooleans(args.slice(1));
+    const { flags } = readFlags(r0);
+    return {
+      kind: "daemon",
+      downloadDir: flags.to ?? flags.dir,
+      seedTimeMs: seedTimeFrom(flags["seed-time"]),
+      deleteFiles: bools.has("delete-files"),
+    };
+  }
   if (/^magnet:\?/i.test(a)) return { kind: "run", initialMagnet: a };
   if (isInfoHash(a)) return { kind: "run", initialMagnet: a };
   if (/\.torrent$/i.test(a)) return { kind: "run", initialTorrent: a };
@@ -180,6 +214,8 @@ usage
   torlnk watch <dir>          headless: download torrents dropped into <dir>
   torlnk serve                headless: HTTP add API (POST /add) on :9161
   torlnk files                headless: serve downloads over HTTP on :9160
+  torlnk discord              headless: notify + take commands over Discord
+  torlnk daemon               durable Discord download worker for systemd
   torlnk attach               open/reattach the TUI in a persistent tmux session
   torlnk update [--force]     update to the latest release and restart any daemon
                               (--force rebuilds/restarts even if already current)

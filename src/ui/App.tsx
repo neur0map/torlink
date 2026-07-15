@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useApp, useInput, useStdout, useStdin } from "ink";
 import { promises as fs } from "node:fs";
-import { loadConfig, saveConfig, type Config } from "../config/config";
+import { loadConfig, saveConfig, type Config, type DiscordConfig } from "../config/config";
 import { normalizeDownloadDir } from "../config/folder";
 import { DownloadQueue } from "../download/queue";
 import { loadQueue, loadSeeds } from "../download/persist";
@@ -44,6 +44,7 @@ import { TabTitle } from "./components/TabTitle";
 import { Splash } from "./views/Splash";
 import { FolderPrompt } from "./components/FolderPrompt";
 import { TrackersPrompt } from "./components/TrackersPrompt";
+import { DiscordPrompt } from "./components/DiscordPrompt";
 import { footerHints } from "./keymap";
 import { COLOR, ICON } from "./theme";
 import { useMouseWheel } from "./hooks/useMouseWheel";
@@ -98,6 +99,7 @@ export function App({
   const [showHelp, setShowHelp] = useState(false);
   const [editingFolder, setEditingFolder] = useState(false);
   const [editingTrackers, setEditingTrackers] = useState(false);
+  const [editingDiscord, setEditingDiscord] = useState(false);
   // A result waiting on the "download to" prompt (D); null when the prompt is
   // closed. lastDownloadToDir pre-fills the next prompt so queueing a batch
   // into the same alternate folder only costs one typed path per session.
@@ -226,6 +228,20 @@ export function App({
   const closeTrackersPrompt = useCallback(() => {
     setEditingTrackers(false);
   }, []);
+
+  const closeDiscordPrompt = useCallback(() => {
+    setEditingDiscord(false);
+  }, []);
+
+  const setDiscord = useCallback(
+    (discord: DiscordConfig | undefined) => {
+      closeDiscordPrompt();
+      if (!config) return;
+      setConfig({ ...config, discord });
+      setNotice(discord ? "Saved Discord settings." : "Cleared Discord settings.");
+    },
+    [config, setConfig, closeDiscordPrompt],
+  );
 
   const setTrackers = useCallback(
     (list: string[]) => {
@@ -486,7 +502,7 @@ export function App({
       submitQuery,
       section,
       setSection,
-      region: showHelp || editingFolder || editingTrackers || pendingDownload ? "help" : region,
+      region: showHelp || editingFolder || editingTrackers || editingDiscord || pendingDownload ? "help" : region,
       setRegion,
       captureMode,
       setCaptureMode,
@@ -522,6 +538,7 @@ export function App({
     showHelp,
     editingFolder,
     editingTrackers,
+    editingDiscord,
     pendingDownload,
     captureMode,
     downloadFocus,
@@ -549,7 +566,7 @@ export function App({
         quitAll();
         return;
       }
-      if (editingFolder || editingTrackers || pendingDownload) return; // the prompt owns input (its own esc + enter)
+      if (editingFolder || editingTrackers || editingDiscord || pendingDownload) return; // the prompt owns input (its own esc + enter)
       if (captureMode === "text") return;
       if (showHelp) {
         setShowHelp(false);
@@ -567,6 +584,11 @@ export function App({
       if (input === "t") {
         setShowHelp(false);
         setEditingTrackers(true);
+        return;
+      }
+      if (input === "g") {
+        setShowHelp(false);
+        setEditingDiscord(true);
         return;
       }
       if (input === "m") {
@@ -667,6 +689,17 @@ export function App({
           </Box>
         ) : null}
 
+        {editingDiscord ? (
+          <Box marginTop={1}>
+            <DiscordPrompt
+              width={Math.max(24, Math.min(cols - 4, 78))}
+              value={store.config.discord}
+              onSubmit={setDiscord}
+              onCancel={closeDiscordPrompt}
+            />
+          </Box>
+        ) : null}
+
         {pendingDownload ? (
           <Box marginTop={1}>
             <FolderPrompt
@@ -688,7 +721,7 @@ export function App({
         <Box
           height={bodyH}
           marginTop={compact ? 0 : 1}
-          display={showHelp || editingFolder || editingTrackers || pendingDownload ? "none" : "flex"}
+          display={showHelp || editingFolder || editingTrackers || editingDiscord || pendingDownload ? "none" : "flex"}
           overflow="hidden"
         >
           <Sidebar />
@@ -704,7 +737,7 @@ export function App({
         </Box>
 
         {showFooter ? (
-          <Box display={showHelp || editingFolder || editingTrackers || pendingDownload ? "none" : "flex"}>
+          <Box display={showHelp || editingFolder || editingTrackers || editingDiscord || pendingDownload ? "none" : "flex"}>
             <Footer hints={footerHints(region, section, downloadFocus, seedFocus, resultFocus)} />
           </Box>
         ) : null}

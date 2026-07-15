@@ -35,7 +35,9 @@ containUnhandledRejections({
     cmd.kind === "watch" ||
     cmd.kind === "seed" ||
     cmd.kind === "serve" ||
-    cmd.kind === "files",
+    cmd.kind === "files" ||
+    cmd.kind === "discord" ||
+    cmd.kind === "daemon",
 });
 
 // Run/reattach the TUI inside a persistent tmux session (execs tmux, then exits).
@@ -90,6 +92,14 @@ if (cmd.kind === "update") {
     dir: cmd.dir,
   };
   void import("./daemon/files").then(({ runFiles }) => runFiles(options).catch(failHeadless));
+} else if (cmd.kind === "discord" || cmd.kind === "daemon") {
+  if (cmd.kind === "discord" && cmd.daemon) daemonize("discord");
+  const options = {
+    downloadDir: cmd.downloadDir,
+    seedTimeMs: cmd.seedTimeMs,
+    deleteFiles: cmd.deleteFiles,
+  };
+  void import("./daemon/discord").then(({ runDiscord }) => runDiscord(options).catch(failHeadless));
 } else if (cmd.kind === "search") {
   // One JSON document on stdout, then exit: the shape a script can pipe into
   // jq. Exit 1 only when every source failed, so an empty-but-healthy search
