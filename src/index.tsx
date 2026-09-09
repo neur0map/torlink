@@ -102,7 +102,10 @@ if (cmd.kind === "update") {
     seedTimeMs: cmd.seedTimeMs,
     deleteFiles: cmd.deleteFiles,
   };
-  void import("./daemon/discord").then(({ runDiscord }) => runDiscord(options).catch(failHeadless));
+  void import("./daemon/discord")
+    .then(({ runDiscord }) => runDiscord(options))
+    .then(() => process.exit(0))
+    .catch(failHeadless);
 } else if (cmd.kind === "search") {
   // One JSON document on stdout, then exit: the shape a script can pipe into
   // jq. Exit 1 only when every source failed, so an empty-but-healthy search

@@ -149,11 +149,18 @@ export async function runDiscord(options: DiscordOptions = {}): Promise<void> {
   );
 
   await new Promise<void>((resolve) => {
+    let shuttingDown = false;
     const shutdown = (): void => {
-      stopGateway?.();
-      detachNotify();
-      runtime.queue.suspend();
-      resolve();
+      if (shuttingDown) return;
+      shuttingDown = true;
+      process.off("SIGINT", shutdown);
+      process.off("SIGTERM", shutdown);
+      void (async () => {
+        stopGateway?.();
+        detachNotify();
+        await runtime.queue.suspend();
+        resolve();
+      })();
     };
     process.on("SIGINT", shutdown);
     process.on("SIGTERM", shutdown);
