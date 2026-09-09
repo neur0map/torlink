@@ -1,4 +1,4 @@
-import { promises as fs } from "node:fs";
+import { promises as fs, mkdirSync, writeFileSync, renameSync, chmodSync } from "node:fs";
 import path from "node:path";
 
 export function serializeWrites(): (task: () => Promise<void>) => Promise<void> {
@@ -22,4 +22,16 @@ export async function writeJsonAtomic(
   // by other local users (chmod is a no-op on Windows, hence the swallow).
   await fs.chmod(tmp, mode).catch(() => {});
   await fs.rename(tmp, file);
+}
+
+// Shutdown has to persist state synchronously before systemd can terminate the
+// process. Keep the same atomic rename and owner-only file mode as async saves.
+export function writeJsonAtomicSync(file: string, data: unknown, mode = 0o600): void {
+  mkdirSync(path.dirname(file), { recursive: true });
+  const tmp = `${file}.sync.tmp`;
+  writeFileSync(tmp, JSON.stringify(data, null, 2), { encoding: "utf8", mode });
+  try {
+    chmodSync(tmp, mode);
+  } catch {}
+  renameSync(tmp, file);
 }

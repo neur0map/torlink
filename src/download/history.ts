@@ -1,7 +1,7 @@
-import { promises as fs, mkdirSync, writeFileSync, renameSync } from "node:fs";
+import { promises as fs } from "node:fs";
 import path from "node:path";
 import { historyFile } from "../config/paths";
-import { serializeWrites, writeJsonAtomic } from "../util/atomic";
+import { serializeWrites, writeJsonAtomic, writeJsonAtomicSync } from "../util/atomic";
 import type { SourceId } from "../sources/types";
 
 export const HISTORY_CAP = 500;
@@ -24,10 +24,7 @@ export function saveHistory(items: HistoryItem[]): Promise<void> {
 
 export function saveHistorySync(items: HistoryItem[]): void {
   try {
-    mkdirSync(path.dirname(historyFile), { recursive: true });
-    const tmp = `${historyFile}.sync.tmp`;
-    writeFileSync(tmp, JSON.stringify(items.slice(0, HISTORY_CAP), null, 2), "utf8");
-    renameSync(tmp, historyFile);
+    writeJsonAtomicSync(historyFile, items.slice(0, HISTORY_CAP));
   } catch {}
 }
 
