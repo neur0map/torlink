@@ -199,6 +199,14 @@ describe("parseCliArgs", () => {
       daemon: true,
     });
   });
+  it("parses the durable daemon command", () => {
+    expect(parseCliArgs(["daemon"])).toEqual({
+      kind: "daemon",
+      downloadDir: undefined,
+      seedTimeMs: undefined,
+      deleteFiles: false,
+    });
+  });
   it("parses discord with defaults", () => {
     expect(parseCliArgs(["discord"])).toEqual({
       kind: "discord",

@@ -93,6 +93,9 @@ if (cmd.kind === "update") {
   };
   void import("./daemon/files").then(({ runFiles }) => runFiles(options).catch(failHeadless));
 } else if (cmd.kind === "discord" || cmd.kind === "daemon") {
+  // `daemon` is deliberately foreground: process supervisors (systemd, Docker,
+  // etc.) own restart and boot behavior. `discord --daemon` remains the
+  // convenience option for an interactive shell.
   if (cmd.kind === "discord" && cmd.daemon) daemonize("discord");
   const options = {
     downloadDir: cmd.downloadDir,

@@ -40,6 +40,8 @@ export type CliCommand =
       deleteFiles?: boolean;
       daemon?: boolean;
     }
+  // Durable download worker for systemd or another process supervisor. It owns
+  // the Discord command gateway and the resumable queue in one process.
   | {
       kind: "daemon";
       downloadDir?: string;
