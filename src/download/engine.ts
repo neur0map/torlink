@@ -45,7 +45,14 @@ export class TorrentEngine {
       // the app the moment a download starts. NAT-PMP can never succeed
       // on macOS because the port is permanently taken, so disable it
       // and let UPnP handle NAT traversal instead.
-      const opts = process.platform === "darwin" ? { natPmp: false } : {};
+      const requestedPort = Number.parseInt(process.env.TORLINK_TORRENT_PORT ?? "", 10);
+      const opts: { natPmp?: boolean; torrentPort?: number } = {};
+      if (process.platform === "darwin") opts.natPmp = false;
+      // A fixed port lets a host firewall admit inbound TCP and uTP peers.
+      // Ignore malformed values so regular desktop runs keep WebTorrent's default.
+      if (Number.isInteger(requestedPort) && requestedPort >= 1024 && requestedPort <= 65535) {
+        opts.torrentPort = requestedPort;
+      }
       this.client = new WebTorrent(opts);
       this.client.on("error", () => {});
     }

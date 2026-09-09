@@ -85,6 +85,26 @@ describe("TorrentEngine macOS port-5350 fix (#22)", () => {
     expect(constructorCalls[0]).not.toHaveProperty("natPmp", false);
   });
 
+  it("uses TORLINK_TORRENT_PORT for a stable inbound peer port", async () => {
+    const { TorrentEngine } = await import("./engine");
+    const prior = process.env.TORLINK_TORRENT_PORT;
+    process.env.TORLINK_TORRENT_PORT = "43635";
+    try {
+      const engine = new TorrentEngine();
+      engine.add(
+        "test-id",
+        "magnet:?xt=urn:btih:0000000000000000000000000000000000000000",
+        "/downloads",
+        {},
+      );
+      engine.destroy();
+    } finally {
+      if (prior === undefined) delete process.env.TORLINK_TORRENT_PORT;
+      else process.env.TORLINK_TORRENT_PORT = prior;
+    }
+    expect(constructorCalls[0]).toMatchObject({ torrentPort: 43635 });
+  });
+
   it("stats(id) ignores getter errors and returns safe defaults", async () => {
     const { TorrentEngine } = await import("./engine");
     const engine = new TorrentEngine();
