@@ -16,9 +16,10 @@ export async function writeJsonAtomic(
 ): Promise<void> {
   await fs.mkdir(path.dirname(file), { recursive: true });
   const tmp = `${file}.tmp`;
+  const mode = opts.mode ?? 0o600;
   await fs.writeFile(tmp, JSON.stringify(data, null, 2), "utf8");
-  // Set the mode before the rename so the file is never briefly world-readable
-  // (chmod is a no-op on Windows, hence the swallow).
-  if (opts.mode !== undefined) await fs.chmod(tmp, opts.mode).catch(() => {});
+  // Set the mode before the rename so durable state is never briefly readable
+  // by other local users (chmod is a no-op on Windows, hence the swallow).
+  await fs.chmod(tmp, mode).catch(() => {});
   await fs.rename(tmp, file);
 }
